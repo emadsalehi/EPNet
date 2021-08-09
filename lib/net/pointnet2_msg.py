@@ -76,7 +76,8 @@ class IA_Layer(nn.Module):
         # print(img_feas.size(), att.size())
 
         img_feas_new = self.conv1(img_feas)
-        out = img_feas_new * att
+
+        out = torch.cat([point_feas * att, img_feas_new], dim=1)
 
         return out
 
@@ -94,11 +95,7 @@ class Atten_Fusion_Conv(nn.Module):
     def forward(self, point_features, img_features):
         # print(point_features.shape, img_features.shape)
 
-        img_features =  self.IA_Layer(img_features, point_features)
-        #print("img_features:", img_features.shape)
-
-        #fusion_features = img_features + point_features
-        fusion_features = torch.cat([point_features, img_features], dim=1)
+        fusion_features =  self.IA_Layer(img_features, point_features)
         fusion_features = F.relu(self.bn1(self.conv1(fusion_features)))
 
         return fusion_features

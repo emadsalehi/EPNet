@@ -77,7 +77,7 @@ class IA_Layer(nn.Module):
 
         img_feas_new = self.conv1(img_feas)
 
-        out = torch.cat([point_feas * att, img_feas_new], dim=1)
+        out = torch.cat([point_feas * att, img_feas_new * att], dim=1)
 
         return out
 

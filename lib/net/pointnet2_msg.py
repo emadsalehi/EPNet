@@ -61,6 +61,9 @@ class IA_Layer(nn.Module):
         self.fc1 = nn.Linear(self.ic, rc)
         self.fc2 = nn.Linear(self.pc, rc)
         self.fc3 = nn.Linear(rc, 1)
+        self.fc4 = nn.Linear(self.ic, rc)
+        self.fc5 = nn.Linear(self.pc, rc)
+        self.fc6 = nn.Linear(rc, 1)
 
 
     def forward(self, img_feas, point_feas):
@@ -68,16 +71,21 @@ class IA_Layer(nn.Module):
         img_feas_f = img_feas.transpose(1,2).contiguous().view(-1, self.ic) #BCN->BNC->(BN)C
         point_feas_f = point_feas.transpose(1,2).contiguous().view(-1, self.pc) #BCN->BNC->(BN)C'
         # print(img_feas)
-        ri = self.fc1(img_feas_f)
-        rp = self.fc2(point_feas_f)
-        att = F.sigmoid(self.fc3(F.tanh(ri + rp))) #BNx1
-        att = att.squeeze(1)
-        att = att.view(batch, 1, -1) #B1N
+        ri1 = self.fc1(img_feas_f)
+        rp1 = self.fc2(point_feas_f)
+        att1 = F.sigmoid(self.fc3(F.tanh(ri1 + rp1))) #BNx1
+        att1 = att1.squeeze(1)
+        att1 = att1.view(batch, 1, -1) #B1N
         # print(img_feas.size(), att.size())
+        ri2 = self.fc4(img_feas_f)
+        rp2 = self.fc5(point_feas_f)
+        att2 = F.sigmoid(self.fc6(F.tanh(ri2 + rp2)))  # BNx1
+        att2 = att2.squeeze(1)
+        att2 = att2.view(batch, 1, -1)
 
         img_feas_new = self.conv1(img_feas)
 
-        out = torch.cat([point_feas * att, img_feas_new * att], dim=1)
+        out = torch.cat([point_feas * att1, img_feas_new * att2], dim=1)
 
         return out
 

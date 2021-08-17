@@ -54,38 +54,21 @@ class IA_Layer(nn.Module):
         print('##############ADDITION ATTENTION(ADD)#########')
         super(IA_Layer, self).__init__()
         self.ic, self.pc = channels
-        rc = self.pc // 4
         self.conv1 = nn.Sequential(nn.Conv1d(self.ic, self.pc, 1),
                                     nn.BatchNorm1d(self.pc),
                                     nn.ReLU())
-        self.fc1 = nn.Linear(self.ic, rc)
-        self.fc2 = nn.Linear(self.pc, rc)
-        self.fc3 = nn.Linear(rc, 1)
-        self.fc4 = nn.Linear(self.ic, rc)
-        self.fc5 = nn.Linear(self.pc, rc)
-        self.fc6 = nn.Linear(rc, 1)
+        self.point_gate = nn.Conv2d(self.pc, 1, kernel_size=3, stride=1, padding=1)
+        self.image_gate = nn.Conv2d(self.pc, 1, kernel_size=3, stride=1, padding=1)
 
 
     def forward(self, img_feas, point_feas):
-        batch = img_feas.size(0)
-        img_feas_f = img_feas.transpose(1,2).contiguous().view(-1, self.ic) #BCN->BNC->(BN)C
-        point_feas_f = point_feas.transpose(1,2).contiguous().view(-1, self.pc) #BCN->BNC->(BN)C'
-        # print(img_feas)
-        ri1 = self.fc1(img_feas_f)
-        rp1 = self.fc2(point_feas_f)
-        att1 = F.sigmoid(self.fc3(F.tanh(ri1 + rp1))) #BNx1
-        att1 = att1.squeeze(1)
-        att1 = att1.view(batch, 1, -1) #B1N
-        # print(img_feas.size(), att.size())
-        ri2 = self.fc4(img_feas_f)
-        rp2 = self.fc5(point_feas_f)
-        att2 = F.sigmoid(self.fc6(F.tanh(ri2 + rp2)))  # BNx1
-        att2 = att2.squeeze(1)
-        att2 = att2.view(batch, 1, -1)
-
         img_feas_new = self.conv1(img_feas)
+        concatenated = torch.cat([point_feas, img_feas_new], dim=0)
 
-        out = torch.cat([point_feas * att1, img_feas_new * att2], dim=1)
+        point_att = torch.sigmoid(self.point_gate(concatenated))
+        image_att = torch.sigmoid(self.image_gate(concatenated))
+
+        out = torch.cat([point_feas * point_att, img_feas_new * image_att], dim=1)
 
         return out
 

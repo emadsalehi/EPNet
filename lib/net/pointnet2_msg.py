@@ -57,16 +57,20 @@ class IA_Layer(nn.Module):
         self.conv1 = nn.Sequential(nn.Conv1d(self.ic, self.pc, 1),
                                     nn.BatchNorm1d(self.pc),
                                     nn.ReLU())
-        self.point_gate = nn.Conv2d(self.pc, 1, kernel_size=3, stride=1, padding=1)
-        self.image_gate = nn.Conv2d(self.pc, 1, kernel_size=3, stride=1, padding=1)
+        rc = self.pc // 2
+        self.fc1 = nn.Linear(self.pc * 2, rc)
+        self.fc2 = nn.Linear(rc, 1)
+        self.fc3 = nn.Linear(self.pc * 2, rc)
+        self.fc4 = nn.Linear(rc, 1)
 
 
     def forward(self, img_feas, point_feas):
+        batch = img_feas.size(0)
         img_feas_new = self.conv1(img_feas)
-        concatenated = torch.cat([point_feas, img_feas_new], dim=0)
+        concatenated = torch.cat([point_feas, img_feas_new], dim=1)
 
-        point_att = torch.sigmoid(self.point_gate(concatenated))
-        image_att = torch.sigmoid(self.image_gate(concatenated))
+        point_att = torch.sigmoid(self.fc2(F.tanh(self.fc1(concatenated))))
+        image_att = torch.sigmoid(self.fc4(F.tanh(self.fc3(concatenated))))
 
         out = torch.cat([point_feas * point_att, img_feas_new * image_att], dim=1)
 

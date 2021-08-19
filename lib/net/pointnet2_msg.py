@@ -68,9 +68,21 @@ class IA_Layer(nn.Module):
         batch = img_feas.size(0)
         img_feas_new = self.conv1(img_feas)
         concatenated = torch.cat([point_feas, img_feas_new], dim=1)
+        concatenated = concatenated.transpose(1, 2).contiguous().view(-1, self.pc * 2)
 
-        point_att = torch.sigmoid(self.fc2(F.tanh(self.fc1(concatenated))))
-        image_att = torch.sigmoid(self.fc4(F.tanh(self.fc3(concatenated))))
+        # print("ic: ", self.ic)
+        # print("pc: ", self.pc)
+        # print("img: ", img_feas.size())
+        # print("point: ", point_feas.size())
+        # print("img new: ", img_feas_new.size())
+        # print("concat: ", concatenated.size())
+
+        point_att = torch.sigmoid(self.fc2(torch.tanh(self.fc1(concatenated))))
+        point_att = point_att.squeeze(1)
+        point_att = point_att.view(batch, 1, -1)
+        image_att = torch.sigmoid(self.fc4(torch.tanh(self.fc3(concatenated))))
+        image_att = image_att.squeeze(1)
+        image_att = image_att.view(batch, 1, -1)
 
         out = torch.cat([point_feas * point_att, img_feas_new * image_att], dim=1)
 

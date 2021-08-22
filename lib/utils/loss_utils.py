@@ -311,19 +311,19 @@ def get_reg_loss(cls_score, mask_score, pred_reg, reg_label, loc_scope, loc_bin_
 
         tar_size = reg_label[:, 3:6]
 
-        insect_x = torch.max(torch.min((pred_x + pred_size[:, 2]/2), (tar_x + tar_size[:, 2]/2)) - torch.max((pred_x - pred_size[:, 2]/2), (tar_x - tar_size[:, 2]/2)), pred_x.new().resize_(pred_x.shape).fill_(1e-3))
-        insect_y = torch.max(torch.min((pred_y + pred_size[:, 0]/2), (tar_y + tar_size[:, 0]/2)) - torch.max((pred_y - pred_size[:, 0]/2), (tar_y - tar_size[:, 0]/2)), pred_x.new().resize_(pred_x.shape).fill_(1e-3))
-        insect_z = torch.max(torch.min((pred_z + pred_size[:, 1]/2), (tar_z + tar_size[:, 1]/2)) - torch.max((pred_z - pred_size[:, 1]/2), (tar_z - tar_size[:, 1]/2)), pred_x.new().resize_(pred_x.shape).fill_(1e-3))
+        insect_x = torch.min((pred_x + pred_size[:, 2]/2), (tar_x + tar_size[:, 2]/2)) - torch.max((pred_x - pred_size[:, 2]/2), (tar_x - tar_size[:, 2]/2))
+        insect_y = torch.min((pred_y + pred_size[:, 0]/2), (tar_y + tar_size[:, 0]/2)) - torch.max((pred_y - pred_size[:, 0]/2), (tar_y - tar_size[:, 0]/2))
+        insect_z = torch.min((pred_z + pred_size[:, 1]/2), (tar_z + tar_size[:, 1]/2)) - torch.max((pred_z - pred_size[:, 1]/2), (tar_z - tar_size[:, 1]/2))
 
-        closure_x = torch.max(torch.max((pred_x + pred_size[:, 2]/2), (tar_x + tar_size[:, 2]/2)) - torch.min((pred_x - pred_size[:, 2]/2), (tar_x - tar_size[:, 2]/2)), pred_x.new().resize_(pred_x.shape).fill_(1e-3))
-        closure_y = torch.max(torch.max((pred_y + pred_size[:, 0]/2), (tar_y + tar_size[:, 0]/2)) - torch.min((pred_y - pred_size[:, 0]/2), (tar_y - tar_size[:, 0]/2)), pred_x.new().resize_(pred_x.shape).fill_(1e-3))
-        closure_z = torch.max(torch.max((pred_x + pred_size[:, 1]/2), (tar_z + tar_size[:, 1]/2)) - torch.min((pred_z - pred_size[:, 1]/2), (tar_z - tar_size[:, 1]/2)), pred_x.new().resize_(pred_x.shape).fill_(1e-3))
+        closure_x = torch.max((pred_x + pred_size[:, 2]/2), (tar_x + tar_size[:, 2]/2)) - torch.min((pred_x - pred_size[:, 2]/2), (tar_x - tar_size[:, 2]/2))
+        closure_y = torch.max((pred_y + pred_size[:, 0]/2), (tar_y + tar_size[:, 0]/2)) - torch.min((pred_y - pred_size[:, 0]/2), (tar_y - tar_size[:, 0]/2))
+        closure_z = torch.max((pred_z + pred_size[:, 1]/2), (tar_z + tar_size[:, 1]/2)) - torch.min((pred_z - pred_size[:, 1]/2), (tar_z - tar_size[:, 1]/2))
 
         insect_area = insect_x * insect_y * insect_z
         closure_area = closure_x * closure_y * closure_z
         pred_area = torch.max(pred_size[:, 0] * pred_size[:, 1] * pred_size[:, 2], pred_size.new().resize_(pred_size[:, 2].shape).fill_(1e-3))
         tar_area = tar_size[:, 0] * tar_size[:, 1] * tar_size[:, 2]
-        iou_tmp = insect_area/(pred_area+tar_area-insect_area) - (closure_area - (pred_area+tar_area-insect_area)) / closure_area
+        iou_tmp = torch.max(insect_area/(pred_area+tar_area-insect_area) - (closure_area - (pred_area+tar_area-insect_area)) / closure_area, pred_x.new().resize_(pred_x.shape).fill_(1e-3))
 
         if use_iou_branch:
             iou_branch_pred_flat = iou_branch_pred.view(-1)
